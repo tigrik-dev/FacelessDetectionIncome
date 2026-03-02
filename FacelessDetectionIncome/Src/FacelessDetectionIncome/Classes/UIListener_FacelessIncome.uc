@@ -2,34 +2,23 @@ class UIListener_FacelessIncome extends UIScreenListener;
 
 event OnInit(UIScreen Screen)
 {
-    if (Screen == none)
-        return;
-
-    if (!Screen.IsA('UIOutpostManagement'))
-        return;
-
-    `Log("FacelessIncome listener triggered for Outpost screen");
-}
-
-/*
-event OnInit(UIScreen Screen)
-{
     local UIOutpostManagement OutpostScreen;
 
     if (Screen != none && Screen.IsA('UIOutpostManagement'))
     {
+		`LOG("Screen is UIOutpostManagement",, 'FacelessDetectionIncome');
         OutpostScreen = UIOutpostManagement(Screen);
 
         AddFacelessIncome(OutpostScreen);
     }
 }
-*/
 
 function AddFacelessIncome(UIOutpostManagement Screen)
 {
     local XComGameState_LWOutpost Outpost;
     local XComGameStateHistory History;
     local float IncomeFaceless;
+	local string FormattedIncomeFaceless;
     local UIScrollingText IncomeFacelessStr;
 
     History = `XCOMHISTORY;
@@ -37,27 +26,49 @@ function AddFacelessIncome(UIOutpostManagement Screen)
         History.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
     );
 
+	`LOG("AddFacelessIncome. Outpost assigned",, 'FacelessDetectionIncome');
+
     if (Outpost == none)
         return;
 
+	`LOG("AddFacelessIncome. Outpost is not null",, 'FacelessDetectionIncome');
     IncomeFaceless = class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
+	FormattedIncomeFaceless = class'UIUtilities'.static.FormatFloat(IncomeFaceless, 1);
 
-    IncomeFacelessStr = Screen.Spawn(class'UIScrollingText', Screen.MainPanel);
-    IncomeFacelessStr.bAnimateOnInit = false;
-    IncomeFacelessStr.bIsNavigable = false;
+	`LOG("AddFacelessIncome. IncomeFaceless assigned",, 'FacelessDetectionIncome');
 
-    IncomeFacelessStr.InitScrollingText(
-        'Outpost_FacelessIncome',
-        "",
-        600,
-        0,
-        96   // adjust Y manually
-    );
+	panelW = Screen.panelW;          // must use LWOTC’s panelW
+	BorderPadding = 15;
+	NextY = Screen.ListTitle.Y + Screen.ListTitle.Height;
 
-    IncomeFacelessStr.SetHTMLText(
-        "<p align='RIGHT'><font size='24' color='#fef4cb'>Faceless Detection " $ 
-        int(IncomeFaceless) $ "</font></p>"
-    );
+	if (Screen.IncomeRecruitStr == none)
+		return;
 
-    IncomeFacelessStr.SetAlpha(67.1875);
+	IncomeFacelessStr = Screen.MainPanel.Spawn(class'UIScrollingText', Screen.MainPanel);
+	IncomeFacelessStr.bAnimateOnInit = false;
+	IncomeFacelessStr.bIsNavigable = false;
+
+	IncomeFacelessStr.InitScrollingText(
+		'Outpost_FacelessIncome',
+		"",
+		Screen.IncomeRecruitStr.Width,
+		Screen.IncomeRecruitStr.X,
+		Screen.IncomeRecruitStr.Y + 28.0
+	);
+
+	IncomeFacelessStr.SetHTMLText("<p align='RIGHT'><font size='24' color='#fef4cb'>Faceless Detection: " $FormattedIncomeFaceless $ "</font></p>");
+	IncomeFacelessStr.SetAlpha(67.1875);
+
+	`LOG("AddFacelessIncome. InitScrollingText done",, 'FacelessDetectionIncome');
+
+	IncomeFacelessStr.SetHTMLText(
+		"<p align='RIGHT'><font size='24' color='#fef4cb'>Faceless Detection: " $ 
+		IncomeFaceless $ "</font></p>"
+	);
+
+	`LOG("AddFacelessIncome. SetHTMLText done",, 'FacelessDetectionIncome');
+
+	IncomeFacelessStr.SetAlpha(67.1875);
+
+	`LOG("AddFacelessIncome. SetAlpha done",, 'FacelessDetectionIncome');
 }
