@@ -1,2 +1,2 @@
-; [Help]
-; SomeString = "localized_value"
+[UIListener_FacelessIncome]
+m_strIncomeFaceless="Faceless Finding Power:"

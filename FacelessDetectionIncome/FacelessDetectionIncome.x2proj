@@ -20,6 +20,12 @@
     <Folder Include="Src\FacelessDetectionIncome\Classes\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Localization\FacelessDetectionIncome.rus">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Localization\XComGame.rus">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="ReadMe.txt" />
     <Content Include="ModPreview.jpg" />
     <Content Include="ContentOptions.json" />

@@ -1,5 +1,7 @@
 class UIListener_FacelessIncome extends UIScreenListener;
 
+var localized string m_strIncomeFaceless;
+
 event OnInit(UIScreen Screen)
 {
     local UIOutpostManagement OutpostScreen;
@@ -37,10 +39,6 @@ function AddFacelessIncome(UIOutpostManagement Screen)
 
 	`LOG("AddFacelessIncome. IncomeFaceless assigned",, 'FacelessDetectionIncome');
 
-	panelW = Screen.panelW;          // must use LWOTC’s panelW
-	BorderPadding = 15;
-	NextY = Screen.ListTitle.Y + Screen.ListTitle.Height;
-
 	if (Screen.IncomeRecruitStr == none)
 		return;
 
@@ -56,18 +54,13 @@ function AddFacelessIncome(UIOutpostManagement Screen)
 		Screen.IncomeRecruitStr.Y + 28.0
 	);
 
-	IncomeFacelessStr.SetHTMLText("<p align='RIGHT'><font size='24' color='#fef4cb'>Faceless Detection: " $FormattedIncomeFaceless $ "</font></p>");
-	IncomeFacelessStr.SetAlpha(67.1875);
-
 	`LOG("AddFacelessIncome. InitScrollingText done",, 'FacelessDetectionIncome');
 
 	IncomeFacelessStr.SetHTMLText(
-		"<p align='RIGHT'><font size='24' color='#fef4cb'>Faceless Detection: " $ 
-		IncomeFaceless $ "</font></p>"
+		"<p align='RIGHT'><font size='24' color='#fef4cb'>"
+		$ m_strIncomeFaceless @ FormattedIncomeFaceless $
+		"</font></p>"
 	);
-
-	`LOG("AddFacelessIncome. SetHTMLText done",, 'FacelessDetectionIncome');
-
 	IncomeFacelessStr.SetAlpha(67.1875);
 
 	`LOG("AddFacelessIncome. SetAlpha done",, 'FacelessDetectionIncome');
