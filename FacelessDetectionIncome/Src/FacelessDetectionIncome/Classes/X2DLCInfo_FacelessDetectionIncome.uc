@@ -8,11 +8,6 @@
 
 class X2DLCInfo_FacelessDetectionIncome extends X2DownloadableContentInfo;
 
-static event OnPostTemplatesCreated()
-{   
-    `LOG("Hello, world!",, 'FacelessDetectionIncome');
-}   
-
 // Sockets Part 1 of 3: variable for storing a new socket.
 // var private SkeletalMeshSocket ExampleSocket;
 

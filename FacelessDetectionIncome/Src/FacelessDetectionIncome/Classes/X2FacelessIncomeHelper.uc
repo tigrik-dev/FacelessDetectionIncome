@@ -1,5 +1,18 @@
 class X2FacelessIncomeHelper extends Object;
 
+static function bool IsLWOTCAtLeast(int Major, int Minor, int Patch)
+{
+    local int CurMajor, CurMinor, CurBuild;
+
+    class'LWVersion'.static.GetVersionNumber(CurMajor, CurMinor, CurBuild);
+
+    return
+        (CurMajor > Major) ||
+        (CurMajor == Major && CurMinor > Minor) ||
+        (CurMajor == Major && CurMinor == Minor &&
+         class'LWVersion'.default.PatchVersion >= Patch);
+}
+
 static function float GetProjectedFacelessIncome(XComGameState_LWOutpost OutpostState)
 {
     local float NewIncome;
@@ -57,22 +70,27 @@ static function float GetProjectedFacelessIncome(XComGameState_LWOutpost Outpost
 		`LOG("GetProjectedFacelessIncome. NewIncome assigned",, 'FacelessDetectionIncome');
     }
 
-    FacelessChanceReductionAbilities =
-        class'XComGameState_LWOutpost'.default.FACELESS_CHANCE_REDUCTION_ABILITIES.Length > 0
-        ? class'XComGameState_LWOutpost'.default.FACELESS_CHANCE_REDUCTION_ABILITIES
-        : class'XComGameState_LWOutpost'.default.DEFAULT_FACELESS_REDUCTION_CHANCE_ABILITIES;
+	// The following change was added in LWOTC 1.2.3:
+	// Items that reduce the chance of recruiting Faceless rebels now also provide a 10% bonus to detecting Rendezvous missions
+	if (IsLWOTCAtLeast(1, 2, 3))
+	{
+		FacelessChanceReductionAbilities =
+			class'XComGameState_LWOutpost'.default.FACELESS_CHANCE_REDUCTION_ABILITIES.Length > 0
+			? class'XComGameState_LWOutpost'.default.FACELESS_CHANCE_REDUCTION_ABILITIES
+			: class'XComGameState_LWOutpost'.default.DEFAULT_FACELESS_REDUCTION_CHANCE_ABILITIES;
 
-    AbilityCount = 0;
-    foreach FacelessChanceReductionAbilities(FacelessReductionAbilityName)
-    {
-        if (Liaison.HasAbilityFromAnySource(FacelessReductionAbilityName))
-        {
-            AbilityCount += 1;
-        }
-    }
+		AbilityCount = 0;
+		foreach FacelessChanceReductionAbilities(FacelessReductionAbilityName)
+		{
+			if (Liaison.HasAbilityFromAnySource(FacelessReductionAbilityName))
+			{
+				AbilityCount += 1;
+			}
+		}
 
-    NewIncome *= 1.0 + (AbilityCount * 0.1);
-	`LOG("GetProjectedFacelessIncome. NewIncome multiplied",, 'FacelessDetectionIncome');
+		NewIncome *= 1.0 + (AbilityCount * 0.1);
+		`LOG("GetProjectedFacelessIncome. NewIncome multiplied",, 'FacelessDetectionIncome');
+	}
 
 	// Don't adjust for geoscape ticks - makes it easier to correlate the value with the LIAISON_MISSION_INCOME_PER_RANK, etc. config values
     // NewIncome *= float(class'X2LWAlienActivityTemplate'.default.HOURS_BETWEEN_ALIEN_ACTIVITY_DETECTION_UPDATES) / 24.0;
