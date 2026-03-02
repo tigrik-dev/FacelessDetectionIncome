@@ -3,6 +3,30 @@ class UIListener_FacelessIncome extends UIScreenListener;
 var localized string m_strIncomeFaceless;
 var int CachedAdvisorObjectID;
 var UIScrollingText IncomeFacelessStr;
+var string LastIntel;
+var string LastSupply;
+var string LastRecruit;
+
+event OnTick(UIScreen Screen, float DeltaTime)
+{
+    local UIOutpostManagement OutpostScreen;
+
+    OutpostScreen = UIOutpostManagement(Screen);
+    if (OutpostScreen == none)
+        return;
+
+    if (OutpostScreen.IncomeIntel != LastIntel
+        || OutpostScreen.IncomeSupply != LastSupply
+        || OutpostScreen.IncomeRecruit != LastRecruit)
+    {
+        LastIntel = OutpostScreen.IncomeIntel;
+        LastSupply = OutpostScreen.IncomeSupply;
+        LastRecruit = OutpostScreen.IncomeRecruit;
+
+		`log("Calling RefreshFacelessIncome from OnTick",,'FacelessDebug');
+        RefreshFacelessIncome(OutpostScreen);
+    }
+}
 
 event OnInit(UIScreen Screen)
 {
@@ -25,14 +49,27 @@ event OnReceiveFocus(UIScreen Screen)
         OutpostScreen = UIOutpostManagement(Screen);
 
 		// Refresh if haven advisor was changed
+		`log("Calling RefreshFacelessIncome from OnReceiveFocus",,'FacelessDebug');
         RefreshFacelessIncome(OutpostScreen);
     }
+}
+
+event OnCommand(UIScreen Screen, int Cmd, int Arg)
+{
+    local UIOutpostManagement OutpostScreen;
+
+    OutpostScreen = UIOutpostManagement(Screen);
+    if (OutpostScreen == none)
+        return;
+
+    // After liaison changes, UpdateJobUI always runs.#
+	`log("Calling RefreshFacelessIncome from OnCommand",,'FacelessDebug');
+    RefreshFacelessIncome(OutpostScreen);
 }
 
 event OnRemoved(UIScreen Screen)
 {
     CachedAdvisorObjectID = -1;
-    IncomeFacelessStr = none;
 }
 
 function AddFacelessIncome(UIOutpostManagement Screen)
@@ -94,6 +131,8 @@ function RefreshFacelessIncome(UIOutpostManagement Screen)
     local string FormattedIncomeFaceless;
     local int CurrentAdvisorID;
 
+	`log("RefreshFacelessIncome called",,'FacelessDebug');
+
     Screen.SaveOutpost();
 
     Outpost = XComGameState_LWOutpost(
@@ -126,9 +165,19 @@ function RefreshFacelessIncome(UIOutpostManagement Screen)
     FacelessIncome =
         class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
 
+	`log("Faceless income calculated as " $ FacelessIncome,,'FacelessDebug');
+
     FormattedIncomeFaceless =
         class'UIUtilities'.static.FormatFloat(FacelessIncome, 1);
 
+	if (IncomeFacelessStr == none)
+	{
+		`log("IncomeFacelessStr is NONE!",,'FacelessDebug');
+	}
+	else
+	{
+		`log("IncomeFacelessStr is valid, updating text",,'FacelessDebug');
+	}
     if (Screen.default.bShowJobInfo && IncomeFacelessStr != none)
     {
         IncomeFacelessStr.SetHTMLText(
