@@ -24,7 +24,6 @@ event OnReceiveFocus(UIScreen Screen)
         OutpostScreen = UIOutpostManagement(Screen);
 
 		// Refresh if haven advisor was changed
-		`log("Calling RefreshFacelessIncome from OnReceiveFocus",,'FacelessDebug');
         RefreshFacelessIncome(OutpostScreen);
     }
 }
@@ -41,16 +40,10 @@ function AddFacelessIncome(UIOutpostManagement Screen)
         History.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
     );
 
-	`LOG("AddFacelessIncome. Outpost assigned",, 'FacelessDetectionIncome');
-
     if (Outpost == none)
         return;
-
-	`LOG("AddFacelessIncome. Outpost is not null",, 'FacelessDetectionIncome');
     IncomeFaceless = class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
 	FormattedIncomeFaceless = class'UIUtilities'.static.FormatFloat(IncomeFaceless, 1);
-
-	`LOG("AddFacelessIncome. IncomeFaceless assigned",, 'FacelessDetectionIncome');
 
 	if (Screen.IncomeRecruitStr == none)
 		return;
@@ -67,16 +60,12 @@ function AddFacelessIncome(UIOutpostManagement Screen)
 		Screen.IncomeRecruitStr.Y + 28.0
 	);
 
-	`LOG("AddFacelessIncome. InitScrollingText done",, 'FacelessDetectionIncome');
-
 	IncomeFacelessStr.SetHTMLText(
 		"<p align='RIGHT'><font size='24' color='#fef4cb'>"
 		$ m_strIncomeFaceless @ FormattedIncomeFaceless $
 		"</font></p>"
 	);
 	IncomeFacelessStr.SetAlpha(67.1875);
-
-	`LOG("AddFacelessIncome. SetAlpha done",, 'FacelessDetectionIncome');
 }
 
 function RefreshFacelessIncome(UIOutpostManagement Screen)
@@ -84,10 +73,6 @@ function RefreshFacelessIncome(UIOutpostManagement Screen)
     local XComGameState_LWOutpost Outpost;
     local float FacelessIncome;
     local string FormattedIncomeFaceless;
-
-	`log("RefreshFacelessIncome called",,'FacelessDebug');
-
-    //Screen.SaveOutpost();
 
     Outpost = XComGameState_LWOutpost(
         `XCOMHISTORY.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
