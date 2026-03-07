@@ -1,3 +1,7 @@
+(https://steamcommunity.com/sharedfiles/filedetails/?id=3677863362)[XCOM 2 Mod]
+
++ Description +
+
 Faceless Detection Power is added to the Haven Management window, in a similar manner to Mission Find Power, etc.
 When a soldier is assigned as a Haven Liaison, this value represents how proficient this soldier is at detecting Faceless.
 
