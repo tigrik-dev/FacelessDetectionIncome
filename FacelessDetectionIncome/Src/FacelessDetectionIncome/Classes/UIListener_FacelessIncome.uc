@@ -1,148 +1,219 @@
 class UIListener_FacelessIncome extends UIScreenListener;
 
+//====================================================
+// Localized Strings
+//====================================================
+
 // Long version (default)
 var localized string m_strIncomeFaceless;
-// Short version (with LWOTC 1.2.3+ and when Mecs are present)
-var localized string m_strShortIncomeFaceless;
-// Cached version of either m_strIncomeFaceless or m_strShortIncomeFaceless
-var string strIncomeFaceless;
 
+// Short version (LWOTC 1.2.3+ when MECs are present)
+var localized string m_strShortIncomeFaceless;
+
+
+//====================================================
+// Runtime State
+//====================================================
+
+// Cached active string (long or short)
+var string ActiveIncomeLabel;
+
+// UI element displaying faceless income
 var UIScrollingText IncomeFacelessStr;
+
+
+//====================================================
+// Screen Lifecycle
+//====================================================
 
 event OnInit(UIScreen Screen)
 {
     local UIOutpostManagement OutpostScreen;
 
-    if (Screen != none && Screen.IsA('UIOutpostManagement'))
-    {
-        OutpostScreen = UIOutpostManagement(Screen);
+    if (Screen == none || !Screen.IsA('UIOutpostManagement'))
+        return;
 
-        AddFacelessIncome(OutpostScreen);
-    }
+    OutpostScreen = UIOutpostManagement(Screen);
+
+    InitializeFacelessIncomeUI(OutpostScreen);
 }
 
 event OnReceiveFocus(UIScreen Screen)
 {
     local UIOutpostManagement OutpostScreen;
 
-    if (Screen != none && Screen.IsA('UIOutpostManagement'))
-    {
-        OutpostScreen = UIOutpostManagement(Screen);
+    if (Screen == none || !Screen.IsA('UIOutpostManagement'))
+        return;
 
-		// Refresh if haven advisor was changed
-        RefreshFacelessIncome(OutpostScreen);
-    }
+    OutpostScreen = UIOutpostManagement(Screen);
+
+    RefreshFacelessIncome(OutpostScreen);
 }
 
-function AddFacelessIncome(UIOutpostManagement Screen)
+
+//====================================================
+// UI Initialization
+//====================================================
+
+function InitializeFacelessIncomeUI(UIOutpostManagement Screen)
 {
     local XComGameState_LWOutpost Outpost;
-    local XComGameStateHistory History;
-    local float IncomeFaceless;
-	local string FormattedIncomeFaceless;
-	local float FacelessWidth;
-	local float ContainerCenter;
 
-    History = `XCOMHISTORY;
-    Outpost = XComGameState_LWOutpost(
-        History.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
-    );
-
+    Outpost = GetOutpost(Screen);
     if (Outpost == none)
         return;
-    IncomeFaceless = class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
-	FormattedIncomeFaceless = class'UIUtilities'.static.FormatFloat(IncomeFaceless, 1);
 
-	if (Screen.IncomeRecruitStr == none)
-		return;
+    // Create widget
+    IncomeFacelessStr = SpawnFacelessWidget(Screen);
 
-	IncomeFacelessStr = Screen.MainPanel.Spawn(class'UIScrollingText', Screen.MainPanel);
-	IncomeFacelessStr.bAnimateOnInit = false;
-	IncomeFacelessStr.bIsNavigable = false;
+    if (IncomeFacelessStr == none)
+        return;
 
-	// Long version by default
-	strIncomeFaceless = m_strIncomeFaceless;
+    ConfigureWidgetLayout(Screen, Outpost);
 
-	// Fix the misaligned positioning for LWOTC 1.2.3+
-	if (class'X2FacelessIncomeHelper'.static.IsLWOTCAtLeast(1, 2, 3))
-	{
-		// Shift the positioning to the left if Mecs are present
-		if (Outpost.GetResistanceMecCount() > 0)
-		{
-			FacelessWidth = 300;
-			ContainerCenter = Screen.ResistanceMecs.X + Screen.ResistanceMecs.Width * 0.5;
-
-			IncomeFacelessStr.InitScrollingText(
-				'Outpost_FacelessIncome',
-				"",
-				FacelessWidth,
-				ContainerCenter - FacelessWidth * 0.5,
-				Screen.ResistanceMecs.Y
-			);
-
-			// Set the text to the short version
-			strIncomeFaceless = m_strShortIncomeFaceless;
-		} else {
-			IncomeFacelessStr.InitScrollingText(
-			'Outpost_FacelessIncome',
-			"",
-			Screen.IncomeIntelStr.Width,
-			Screen.IncomeIntelStr.X,
-			Screen.IncomeIntelStr.Y - 28.0);
-		}
-	} else {
-		IncomeFacelessStr.InitScrollingText(
-		'Outpost_FacelessIncome',
-		"",
-		Screen.IncomeRecruitStr.Width,
-		Screen.IncomeRecruitStr.X,
-		Screen.IncomeRecruitStr.Y + 28.0);
-	}
-
-	IncomeFacelessStr.SetHTMLText(
-		"<p align='RIGHT'><font size='24' color='#fef4cb'>"
-		$ strIncomeFaceless @ FormattedIncomeFaceless $
-		"</font></p>"
-	);
-	IncomeFacelessStr.SetAlpha(67.1875);
+    UpdateDisplayedIncome(Screen, Outpost);
 }
+
+
+//====================================================
+// UI Refresh
+//====================================================
 
 function RefreshFacelessIncome(UIOutpostManagement Screen)
 {
     local XComGameState_LWOutpost Outpost;
-    local float FacelessIncome;
-    local string FormattedIncomeFaceless;
 
-    Outpost = XComGameState_LWOutpost(
-        `XCOMHISTORY.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
-    );
+    if (IncomeFacelessStr == none)
+        return;
 
+    Outpost = GetOutpost(Screen);
     if (Outpost == none)
         return;
 
-    FacelessIncome =
-        class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
+    UpdateDisplayedIncome(Screen, Outpost);
+}
 
-	`log("Faceless income calculated as " $ FacelessIncome,,'FacelessDetectIncome');
 
-    FormattedIncomeFaceless =
-        class'UIUtilities'.static.FormatFloat(FacelessIncome, 1);
+//====================================================
+// Widget Creation
+//====================================================
 
-	if (IncomeFacelessStr == none)
-	{
-		`log("IncomeFacelessStr is NONE!",,'FacelessDetectIncome');
-	}
-    if (Screen.default.bShowJobInfo && IncomeFacelessStr != none)
+function UIScrollingText SpawnFacelessWidget(UIOutpostManagement Screen)
+{
+    local UIScrollingText Widget;
+
+    if (Screen.IncomeRecruitStr == none)
+        return none;
+
+    Widget = Screen.MainPanel.Spawn(class'UIScrollingText', Screen.MainPanel);
+
+    Widget.bAnimateOnInit = false;
+    Widget.bIsNavigable = false;
+
+    return Widget;
+}
+
+
+//====================================================
+// Layout Logic
+//====================================================
+
+function ConfigureWidgetLayout(UIOutpostManagement Screen, XComGameState_LWOutpost Outpost)
+{
+    local float Width;
+    local float ContainerCenter;
+
+    // Default label
+    ActiveIncomeLabel = m_strIncomeFaceless;
+
+    // LWOTC 1.2.3+ changed UI layout
+    if (class'X2FacelessIncomeHelper'.static.IsLWOTCAtLeast(1,2,3))
     {
-        IncomeFacelessStr.SetHTMLText(
-            "<p align='RIGHT'><font size='24' color='#fef4cb'>"
-            $ strIncomeFaceless @ FormattedIncomeFaceless $
-            "</font></p>"
+        if (Outpost.GetResistanceMecCount() > 0)
+        {
+            // Center between Strength and MEC text
+            Width = 300;
+            ContainerCenter = Screen.ResistanceMecs.X + Screen.ResistanceMecs.Width * 0.5;
+
+            IncomeFacelessStr.InitScrollingText(
+                'Outpost_FacelessIncome',
+                "",
+                Width,
+                ContainerCenter - Width * 0.5,
+                Screen.ResistanceMecs.Y
+            );
+
+            ActiveIncomeLabel = m_strShortIncomeFaceless;
+        }
+        else
+        {
+            // Standard LWOTC layout without MECs
+            IncomeFacelessStr.InitScrollingText(
+                'Outpost_FacelessIncome',
+                "",
+                Screen.IncomeIntelStr.Width,
+                Screen.IncomeIntelStr.X,
+                Screen.IncomeIntelStr.Y - 28.0
+            );
+        }
+    }
+    else
+    {
+        // Pre-1.2.3 layout
+        IncomeFacelessStr.InitScrollingText(
+            'Outpost_FacelessIncome',
+            "",
+            Screen.IncomeRecruitStr.Width,
+            Screen.IncomeRecruitStr.X,
+            Screen.IncomeRecruitStr.Y + 28.0
         );
     }
 }
 
+
+//====================================================
+// UI Update
+//====================================================
+
+function UpdateDisplayedIncome(UIOutpostManagement Screen, XComGameState_LWOutpost Outpost)
+{
+    local float Income;
+    local string FormattedIncome;
+
+    Income = class'X2FacelessIncomeHelper'.static.GetProjectedFacelessIncome(Outpost);
+
+    `log("Faceless income calculated as " $ Income,,'FacelessDetectIncome');
+
+    FormattedIncome = class'UIUtilities'.static.FormatFloat(Income, 1);
+
+    if (Screen.default.bShowJobInfo && IncomeFacelessStr != none)
+    {
+        IncomeFacelessStr.SetHTMLText(BuildIncomeHTML(FormattedIncome));
+		IncomeFacelessStr.SetAlpha(67.1875);
+    }
+}
+
+
+//====================================================
+// Helpers
+//====================================================
+
+function XComGameState_LWOutpost GetOutpost(UIOutpostManagement Screen)
+{
+    return XComGameState_LWOutpost(
+        `XCOMHISTORY.GetGameStateForObjectID(Screen.OutpostRef.ObjectID)
+    );
+}
+
+function string BuildIncomeHTML(string FormattedIncome)
+{
+    return "<p align='RIGHT'><font size='24' color='#fef4cb'>"
+        $ ActiveIncomeLabel @ FormattedIncome $
+        "</font></p>";
+}
+
+
 defaultproperties
 {
-	IncomeFacelessStr = none;
+    IncomeFacelessStr = none
 }
